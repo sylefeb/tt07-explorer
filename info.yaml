@@ -30,24 +30,24 @@ pinout:
   ui[7]: "ui_in[7]"
 
   # Outputs
-  uo[0]: "ui_out[0]"
-  uo[1]: "ui_out[1]"
-  uo[2]: "ui_out[2]"
-  uo[3]: "ui_out[3]"
-  uo[4]: "ui_out[4]"
-  uo[5]: "ui_out[5]"
-  uo[6]: "ui_out[6]"
-  uo[7]: "ui_out[7]"
+  uo[0]: "uo_out[0]"
+  uo[1]: "uo_out[1]"
+  uo[2]: "uo_out[2]"
+  uo[3]: "uo_out[3]"
+  uo[4]: "uo_out[4]"
+  uo[5]: "uo_out[5]"
+  uo[6]: "uo_out[6]"
+  uo[7]: "uo_out[7]"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: ""
-  uio[7]: ""
+  uio[0]: "uio[0]"
+  uio[1]: "uio[1]"
+  uio[2]: "uio[2]"
+  uio[3]: "uio[3]"
+  uio[4]: "uio[4]"
+  uio[5]: "uio[5]"
+  uio[6]: "uio[6]"
+  uio[7]: "uio[7]"
 
 # Do not change!
 yaml_version: 6
