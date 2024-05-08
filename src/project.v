@@ -5,6 +5,8 @@
 
 `default_nettype none
 
+`include "build.v"
+
 module tt_um_example (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
@@ -16,9 +18,11 @@ module tt_um_example (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
+  M_main main(
+    .out_leds(uo_out),
+    .in_run(1'b1),
+    .reset(~rst_n),
+    .clock(clk)
+  );
 
 endmodule
