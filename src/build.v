@@ -124,10 +124,10 @@ endmodule
 module _SB_IO (
 	inout  PACKAGE_PIN,
 	input  LATCH_INPUT_VALUE,
-	input  CLOCK_ENABLE = 1'b1,
+	input  CLOCK_ENABLE,
 	input  INPUT_CLK,
 	input  OUTPUT_CLK,
-	input  OUTPUT_ENABLE = 1'b1,
+	input  OUTPUT_ENABLE,
 	input  D_OUT_0,
 	input  D_OUT_1,
 	output D_IN_0,
@@ -192,7 +192,7 @@ module _SB_GB_IO (
 	inout  PACKAGE_PIN,
 	output GLOBAL_BUFFER_OUTPUT,
 	input  LATCH_INPUT_VALUE,
-	input  CLOCK_ENABLE = 1'b1,
+	input  CLOCK_ENABLE,
 	input  INPUT_CLK,
 	input  OUTPUT_CLK,
 	input  OUTPUT_ENABLE,
@@ -2173,4 +2173,3 @@ _q_spiscreen_csn <= _d_spiscreen_csn;
 end
 
 endmodule
-
