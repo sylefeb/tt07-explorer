@@ -116,7 +116,7 @@ module _SB_IO (
 	assign D_IN_0 = din_0, D_IN_1 = din_1;
 
 	generate
-    PACKAGE_PIN_O = dout;
+    assign PACKAGE_PIN_O = dout;
 		if (PIN_TYPE[5:4] == 2'b01) assign PACKAGE_PIN_OE = 1'b1;
 		if (PIN_TYPE[5:4] == 2'b10) assign PACKAGE_PIN_OE = OUTPUT_ENABLE;
 		if (PIN_TYPE[5:4] == 2'b11) assign PACKAGE_PIN_OE = outena_q;
