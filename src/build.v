@@ -495,8 +495,8 @@ sb_io_inout_unnamed_6 (
 .oe(_t_io_oe[0+:1]),
 .out(_t_io_o[0+:1]),
 .in(_w_sb_io_inout_unnamed_6_in),
-.pin_i(inout_io0_i)
-.pin_o(inout_io0_o)
+.pin_i(inout_io0_i),
+.pin_o(inout_io0_o),
 .pin_oe(inout_io0_oe)
 );
 sb_io_inout #(
@@ -507,8 +507,8 @@ sb_io_inout_unnamed_7 (
 .oe(_t_io_oe[1+:1]),
 .out(_t_io_o[1+:1]),
 .in(_w_sb_io_inout_unnamed_7_in),
-.pin_i(inout_io1_i)
-.pin_o(inout_io1_o)
+.pin_i(inout_io1_i),
+.pin_o(inout_io1_o),
 .pin_oe(inout_io1_oe)
 );
 sb_io_inout #(
@@ -519,8 +519,8 @@ sb_io_inout_unnamed_8 (
 .oe(_t_io_oe[2+:1]),
 .out(_t_io_o[2+:1]),
 .in(_w_sb_io_inout_unnamed_8_in),
-.pin_i(inout_io2_i)
-.pin_o(inout_io2_o)
+.pin_i(inout_io2_i),
+.pin_o(inout_io2_o),
 .pin_oe(inout_io2_oe)
 );
 sb_io_inout #(
@@ -531,8 +531,8 @@ sb_io_inout_unnamed_9 (
 .oe(_t_io_oe[3+:1]),
 .out(_t_io_o[3+:1]),
 .in(_w_sb_io_inout_unnamed_9_in),
-.pin_i(inout_io3_i)
-.pin_o(inout_io3_o)
+.pin_i(inout_io3_i),
+.pin_o(inout_io3_o),
 .pin_oe(inout_io3_oe)
 );
 sb_io sb_io_unnamed_10 (
