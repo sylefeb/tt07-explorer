@@ -38,82 +38,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // pin groups and renaming
 //
 
-module top(
-  output D1,
-output D2,
-output D3,
-output D4,
-output D5,
-output PMOD1,
-output PMOD10,
-inout  PMOD2,
-inout  PMOD3,
-output PMOD4,
-inout  PMOD7,
-inout  PMOD8,
-output PMOD9,
-input  RX,
-output TR3,
-output TR4,
-output TR5,
-output TR6,
-output TR7,
-output TX,
-
-  input  CLK
-  );
-
-// the init sequence pauses for some cycles
-// waiting for BRAM init to stabalize
-// this is a known issue with ice40 FPGAs
-// https://github.com/YosysHQ/icestorm/issues/76
-
-reg ready = 0;
-reg [23:0] RST_d;
-reg [23:0] RST_q;
-
-always @* begin
-  RST_d = RST_q[23] ? RST_q : RST_q + 1;
-end
-
-always @(posedge CLK) begin
-  if (ready) begin
-    RST_q <= RST_d;
-  end else begin
-    ready <= 1;
-    RST_q <= 0;
-  end
-end
-
-wire run_main;
-assign run_main = 1'b1;
-
-
-
-M_main __main(
-  .clock(CLK),
-  .reset(~RST_q[23]),
-  .out_leds({D5,D4,D3,D2,D1}),
-.out_ram_bank({PMOD10,PMOD9}),
-.out_ram_clk({PMOD4}),
-.out_ram_csn({PMOD1}),
-.inout_ram_io0({PMOD2}),
-.inout_ram_io1({PMOD3}),
-.inout_ram_io2({PMOD7}),
-.inout_ram_io3({PMOD8}),
-.out_spiscreen_clk({TR4}),
-.out_spiscreen_csn({TR5}),
-.out_spiscreen_dc({TR6}),
-.out_spiscreen_mosi({TR3}),
-.out_spiscreen_resn({TR7}),
-.in_uart_rx({RX}),
-.out_uart_tx({TX}),
-
-  .in_run(run_main)
-);
-
-endmodule
 // NOTE: this is a modified exerpt from Yosys ice40 cell_sim.v
+// WARNING: heavily hacked and does not support some cases (unregistered output, inverted output)
 
 `timescale 1ps / 1ps
 // `define SB_DFF_INIT initial Q = 0;
@@ -122,9 +48,13 @@ endmodule
 // SiliconBlue IO Cells
 
 module _SB_IO (
-	inout  PACKAGE_PIN,
-	input  LATCH_INPUT_VALUE,
-	input  CLOCK_ENABLE,
+	// inout  PACKAGE_PIN,
+  input  PACKAGE_PIN_I,
+  output PACKAGE_PIN_O,
+  output PACKAGE_PIN_OE,
+
+	//input  LATCH_INPUT_VALUE,
+	//input  CLOCK_ENABLE,
 	input  INPUT_CLK,
 	input  OUTPUT_CLK,
 	input  OUTPUT_ENABLE,
@@ -143,25 +73,30 @@ module _SB_IO (
 	reg dout_q_0, dout_q_1;
 	reg outena_q;
 
+  wire CLOCK_ENABLE;
+  assign CLOCK_ENABLE = 1'b1;
+  wire LATCH_INPUT_VALUE;
+  assign LATCH_INPUT_VALUE = 1'b0;
+
 	// IO tile generates a constant 1'b1 internally if global_cen is not connected
 
 	generate if (!NEG_TRIGGER) begin
-		always @(posedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN;
-		always @(negedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN;
+		always @(posedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN_I;
+		always @(negedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN_I;
 		always @(posedge OUTPUT_CLK) dout_q_0        <= D_OUT_0;
 		always @(negedge OUTPUT_CLK) dout_q_1        <= D_OUT_1;
 		always @(posedge OUTPUT_CLK) outena_q        <= OUTPUT_ENABLE;
 	end else begin
-		always @(negedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN;
-		always @(posedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN;
+		always @(negedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN_I;
+		always @(posedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN_I;
 		always @(negedge OUTPUT_CLK) dout_q_0        <= D_OUT_0;
 		always @(posedge OUTPUT_CLK) dout_q_1        <= D_OUT_1;
 		always @(negedge OUTPUT_CLK) outena_q        <= OUTPUT_ENABLE;
 	end endgenerate
 
 	always @* begin
-		if (!PIN_TYPE[1] || !LATCH_INPUT_VALUE)
-			din_0 = PIN_TYPE[0] ? PACKAGE_PIN : din_q_0;
+		//if (!PIN_TYPE[1] || !LATCH_INPUT_VALUE)
+	  din_0 = PIN_TYPE[0] ? PACKAGE_PIN_I : din_q_0;
 		din_1 = din_q_1;
 	end
 
@@ -172,59 +107,21 @@ module _SB_IO (
 	//always @* outclk_delayed_2 <= outclk_delayed_1;
 
 	always @* begin
-		if (PIN_TYPE[3])
-			dout = PIN_TYPE[2] ? !dout_q_0 : D_OUT_0;
-		else
-			dout = (/*outclk_delayed_2*/OUTPUT_CLK ^ NEG_TRIGGER) || PIN_TYPE[2] ? dout_q_0 : dout_q_1;
+		//if (PIN_TYPE[3])
+	  //  dout = PIN_TYPE[2] ? !dout_q_0 : D_OUT_0;
+		//else
+		dout = (/*outclk_delayed_2*/OUTPUT_CLK ^ NEG_TRIGGER) || PIN_TYPE[2] ? dout_q_0 : dout_q_1;
 	end
 
 	assign D_IN_0 = din_0, D_IN_1 = din_1;
 
 	generate
-		if (PIN_TYPE[5:4] == 2'b01) assign PACKAGE_PIN = dout;
-		if (PIN_TYPE[5:4] == 2'b10) assign PACKAGE_PIN = OUTPUT_ENABLE ? dout : 1'bz;
-		if (PIN_TYPE[5:4] == 2'b11) assign PACKAGE_PIN = outena_q ? dout : 1'bz;
+    PACKAGE_PIN_O = dout;
+		if (PIN_TYPE[5:4] == 2'b01) assign PACKAGE_PIN_OE = 1'b1;
+		if (PIN_TYPE[5:4] == 2'b10) assign PACKAGE_PIN_OE = OUTPUT_ENABLE;
+		if (PIN_TYPE[5:4] == 2'b11) assign PACKAGE_PIN_OE = outena_q;
 	endgenerate
 
-endmodule
-
-module _SB_GB_IO (
-	inout  PACKAGE_PIN,
-	output GLOBAL_BUFFER_OUTPUT,
-	input  LATCH_INPUT_VALUE,
-	input  CLOCK_ENABLE,
-	input  INPUT_CLK,
-	input  OUTPUT_CLK,
-	input  OUTPUT_ENABLE,
-	input  D_OUT_0,
-	input  D_OUT_1,
-	output D_IN_0,
-	output D_IN_1
-);
-	parameter [5:0] PIN_TYPE = 6'b000000;
-	parameter [0:0] PULLUP = 1'b0;
-	parameter [0:0] NEG_TRIGGER = 1'b0;
-	parameter IO_STANDARD = "SB_LVCMOS";
-
-	assign GLOBAL_BUFFER_OUTPUT = PACKAGE_PIN;
-
-	_SB_IO #(
-		.PIN_TYPE(PIN_TYPE),
-		.PULLUP(PULLUP),
-		.NEG_TRIGGER(NEG_TRIGGER),
-		.IO_STANDARD(IO_STANDARD)
-	) IO (
-		.PACKAGE_PIN(PACKAGE_PIN),
-		.LATCH_INPUT_VALUE(LATCH_INPUT_VALUE),
-		.CLOCK_ENABLE(CLOCK_ENABLE),
-		.INPUT_CLK(INPUT_CLK),
-		.OUTPUT_CLK(OUTPUT_CLK),
-		.OUTPUT_ENABLE(OUTPUT_ENABLE),
-		.D_OUT_0(D_OUT_0),
-		.D_OUT_1(D_OUT_1),
-		.D_IN_0(D_IN_0),
-		.D_IN_1(D_IN_1)
-	);
 endmodule
 
 
@@ -287,7 +184,7 @@ module ddr_clock(
 `endif
     .PIN_TYPE(6'b1100_01)
   ) sbio_clk (
-      .PACKAGE_PIN(ddr_clock),
+      .PACKAGE_PIN_O(ddr_clock),
       .D_OUT_0(1'b0),
       .D_OUT_1(1'b1),
       .OUTPUT_ENABLE(enable),
@@ -342,8 +239,12 @@ module sb_io_inout #(parameter TYPE=6'b1101_00) (
 	input        oe,
   input        out,
 	output       in,
-  inout        pin
+  input        pin_i,
+  output       pin_o,
+  output       pin_oe
   );
+
+  wire unused;
 
 `ifdef SIM_SB_IO
   _SB_IO #(
@@ -352,10 +253,13 @@ module sb_io_inout #(parameter TYPE=6'b1101_00) (
 `endif
     .PIN_TYPE(TYPE)
   ) sbio (
-      .PACKAGE_PIN(pin),
+      .PACKAGE_PIN_I(pin_i),
+      .PACKAGE_PIN_O(pin_o),
+      .PACKAGE_PIN_OE(pin_oe),
 			.OUTPUT_ENABLE(oe),
       .D_OUT_0(out),
       .D_OUT_1(out),
+      .D_IN_0(unused),
 			.D_IN_1(in),
       .OUTPUT_CLK(clock),
       .INPUT_CLK(clock)
@@ -385,8 +289,9 @@ module sb_io(
     //                ^^ ignored (input)
     //           ^^^^ registered output
   ) sbio (
-      .PACKAGE_PIN(pin),
+      .PACKAGE_PIN_O(pin),
       .D_OUT_0(out),
+      .OUTPUT_ENABLE(1'b1),
       .OUTPUT_CLK(clock)
   );
 
@@ -519,24 +424,40 @@ in_send_else_read,
 out_read,
 out_clk,
 out_csn,
-inout_io0,
-inout_io1,
-inout_io2,
-inout_io3,
+inout_io0_i,
+inout_io0_o,
+inout_io0_oe,
+inout_io1_i,
+inout_io1_o,
+inout_io1_oe,
+inout_io2_i,
+inout_io2_o,
+inout_io2_oe,
+inout_io3_i,
+inout_io3_o,
+inout_io3_oe,
 reset,
 out_clock,
 clock
 );
-input  [7:0] in_send;
-input  [0:0] in_trigger;
-input  [0:0] in_send_else_read;
+input   [7:0] in_send;
+input   [0:0] in_trigger;
+input   [0:0] in_send_else_read;
 output  [7:0] out_read;
 output  [0:0] out_clk;
 output  [0:0] out_csn;
-inout  [0:0] inout_io0;
-inout  [0:0] inout_io1;
-inout  [0:0] inout_io2;
-inout  [0:0] inout_io3;
+input   [0:0] inout_io0_i;
+output  [0:0] inout_io0_o;
+output  [0:0] inout_io0_oe;
+input   [0:0] inout_io1_i;
+output  [0:0] inout_io1_o;
+output  [0:0] inout_io1_oe;
+input   [0:0] inout_io2_i;
+output  [0:0] inout_io2_o;
+output  [0:0] inout_io2_oe;
+input   [0:0] inout_io3_i;
+output  [0:0] inout_io3_o;
+output  [0:0] inout_io3_oe;
 input reset;
 output out_clock;
 input clock;
@@ -574,7 +495,10 @@ sb_io_inout_unnamed_6 (
 .oe(_t_io_oe[0+:1]),
 .out(_t_io_o[0+:1]),
 .in(_w_sb_io_inout_unnamed_6_in),
-.pin(inout_io0));
+.pin_i(inout_io0_i)
+.pin_o(inout_io0_o)
+.pin_oe(inout_io0_oe)
+);
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
@@ -583,7 +507,10 @@ sb_io_inout_unnamed_7 (
 .oe(_t_io_oe[1+:1]),
 .out(_t_io_o[1+:1]),
 .in(_w_sb_io_inout_unnamed_7_in),
-.pin(inout_io1));
+.pin_i(inout_io1_i)
+.pin_o(inout_io1_o)
+.pin_oe(inout_io1_oe)
+);
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
@@ -592,7 +519,10 @@ sb_io_inout_unnamed_8 (
 .oe(_t_io_oe[2+:1]),
 .out(_t_io_o[2+:1]),
 .in(_w_sb_io_inout_unnamed_8_in),
-.pin(inout_io2));
+.pin_i(inout_io2_i)
+.pin_o(inout_io2_o)
+.pin_oe(inout_io2_oe)
+);
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
@@ -601,7 +531,10 @@ sb_io_inout_unnamed_9 (
 .oe(_t_io_oe[3+:1]),
 .out(_t_io_o[3+:1]),
 .in(_w_sb_io_inout_unnamed_9_in),
-.pin(inout_io3));
+.pin_i(inout_io3_i)
+.pin_o(inout_io3_o)
+.pin_oe(inout_io3_oe)
+);
 sb_io sb_io_unnamed_10 (
 .clock(clock),
 .out(_t_chip_select),
@@ -661,10 +594,18 @@ out_busy,
 out_data_next,
 out_ram_csn,
 out_ram_clk,
-inout_ram_io0,
-inout_ram_io1,
-inout_ram_io2,
-inout_ram_io3,
+inout_ram_io0_i,
+inout_ram_io0_o,
+inout_ram_io0_oe,
+inout_ram_io1_i,
+inout_ram_io1_o,
+inout_ram_io1_oe,
+inout_ram_io2_i,
+inout_ram_io2_o,
+inout_ram_io2_oe,
+inout_ram_io3_i,
+inout_ram_io3_o,
+inout_ram_io3_oe,
 reset,
 out_clock,
 clock
@@ -679,10 +620,18 @@ output  [0:0] out_busy;
 output  [0:0] out_data_next;
 output  [0:0] out_ram_csn;
 output  [0:0] out_ram_clk;
-inout  [0:0] inout_ram_io0;
-inout  [0:0] inout_ram_io1;
-inout  [0:0] inout_ram_io2;
-inout  [0:0] inout_ram_io3;
+input   [0:0] inout_ram_io0_i;
+output  [0:0] inout_ram_io0_o;
+output  [0:0] inout_ram_io0_oe;
+input   [0:0] inout_ram_io1_i;
+output  [0:0] inout_ram_io1_o;
+output  [0:0] inout_ram_io1_oe;
+input   [0:0] inout_ram_io2_i;
+output  [0:0] inout_ram_io2_o;
+output  [0:0] inout_ram_io2_oe;
+input   [0:0] inout_ram_io3_i;
+output  [0:0] inout_ram_io3_o;
+output  [0:0] inout_ram_io3_oe;
 input reset;
 output out_clock;
 input clock;
@@ -730,10 +679,18 @@ M_qpsram_qspi_M_main_ram_ram_spi spi (
 .out_read(_w_spi_read),
 .out_clk(_w_spi_clk),
 .out_csn(_w_spi_csn),
-.inout_io0(inout_ram_io0),
-.inout_io1(inout_ram_io1),
-.inout_io2(inout_ram_io2),
-.inout_io3(inout_ram_io3),
+.inout_io0_i(inout_ram_io0_i),
+.inout_io0_o(inout_ram_io0_o),
+.inout_io0_oe(inout_ram_io0_oe),
+.inout_io1_i(inout_ram_io1_i),
+.inout_io1_o(inout_ram_io1_o),
+.inout_io1_oe(inout_ram_io1_oe),
+.inout_io2_i(inout_ram_io2_i),
+.inout_io2_o(inout_ram_io2_o),
+.inout_io2_oe(inout_ram_io2_oe),
+.inout_io3_i(inout_ram_io3_i),
+.inout_io3_o(inout_ram_io3_o),
+.inout_io3_oe(inout_ram_io3_oe),
 .reset(reset),
 .clock(clock));
 
@@ -905,10 +862,18 @@ out_io_done,
 out_ram_clk,
 out_ram_csn,
 out_ram_bank,
-inout_ram_io0,
-inout_ram_io1,
-inout_ram_io2,
-inout_ram_io3,
+inout_ram_io0_i,
+inout_ram_io0_o,
+inout_ram_io0_oe,
+inout_ram_io1_i,
+inout_ram_io1_o,
+inout_ram_io1_oe,
+inout_ram_io2_i,
+inout_ram_io2_o,
+inout_ram_io2_oe,
+inout_ram_io3_i,
+inout_ram_io3_o,
+inout_ram_io3_oe,
 reset,
 out_clock,
 clock
@@ -924,10 +889,18 @@ output  [1-1:0] out_io_done;
 output  [0:0] out_ram_clk;
 output  [0:0] out_ram_csn;
 output  [1:0] out_ram_bank;
-inout  [0:0] inout_ram_io0;
-inout  [0:0] inout_ram_io1;
-inout  [0:0] inout_ram_io2;
-inout  [0:0] inout_ram_io3;
+input   [0:0] inout_ram_io0_i;
+output  [0:0] inout_ram_io0_o;
+output  [0:0] inout_ram_io0_oe;
+input   [0:0] inout_ram_io1_i;
+output  [0:0] inout_ram_io1_o;
+output  [0:0] inout_ram_io1_oe;
+input   [0:0] inout_ram_io2_i;
+output  [0:0] inout_ram_io2_o;
+output  [0:0] inout_ram_io2_oe;
+input   [0:0] inout_ram_io3_i;
+output  [0:0] inout_ram_io3_o;
+output  [0:0] inout_ram_io3_oe;
 input reset;
 output out_clock;
 input clock;
@@ -982,10 +955,18 @@ M_qpsram_ram_M_main_ram_ram ram (
 .out_data_next(_w_ram_data_next),
 .out_ram_csn(_w_ram_ram_csn),
 .out_ram_clk(_w_ram_ram_clk),
-.inout_ram_io0(inout_ram_io0),
-.inout_ram_io1(inout_ram_io1),
-.inout_ram_io2(inout_ram_io2),
-.inout_ram_io3(inout_ram_io3),
+.inout_io0_i(inout_ram_io0_i),
+.inout_io0_o(inout_ram_io0_o),
+.inout_io0_oe(inout_ram_io0_oe),
+.inout_io1_i(inout_ram_io1_i),
+.inout_io1_o(inout_ram_io1_o),
+.inout_io1_oe(inout_ram_io1_oe),
+.inout_io2_i(inout_ram_io2_i),
+.inout_io2_o(inout_ram_io2_o),
+.inout_io2_oe(inout_ram_io2_oe),
+.inout_io3_i(inout_ram_io3_i),
+.inout_io3_o(inout_ram_io3_o),
+.inout_io3_oe(inout_ram_io3_oe),
 .reset(reset),
 .clock(clock));
 
@@ -1953,10 +1934,18 @@ out_spiscreen_mosi,
 out_spiscreen_dc,
 out_spiscreen_resn,
 out_spiscreen_csn,
-inout_ram_io0,
-inout_ram_io1,
-inout_ram_io2,
-inout_ram_io3,
+inout_ram_io0_i,
+inout_ram_io0_o,
+inout_ram_io0_oe,
+inout_ram_io1_i,
+inout_ram_io1_o,
+inout_ram_io1_oe,
+inout_ram_io2_i,
+inout_ram_io2_o,
+inout_ram_io2_oe,
+inout_ram_io3_i,
+inout_ram_io3_o,
+inout_ram_io3_oe,
 in_run,
 out_done,
 reset,
@@ -1974,10 +1963,18 @@ output  [0:0] out_spiscreen_mosi;
 output  [0:0] out_spiscreen_dc;
 output  [0:0] out_spiscreen_resn;
 output  [0:0] out_spiscreen_csn;
-inout  [0:0] inout_ram_io0;
-inout  [0:0] inout_ram_io1;
-inout  [0:0] inout_ram_io2;
-inout  [0:0] inout_ram_io3;
+input   [0:0] inout_ram_io0_i;
+output  [0:0] inout_ram_io0_o;
+output  [0:0] inout_ram_io0_oe;
+input   [0:0] inout_ram_io1_i;
+output  [0:0] inout_ram_io1_o;
+output  [0:0] inout_ram_io1_oe;
+input   [0:0] inout_ram_io2_i;
+output  [0:0] inout_ram_io2_o;
+output  [0:0] inout_ram_io2_oe;
+input   [0:0] inout_ram_io3_i;
+output  [0:0] inout_ram_io3_o;
+output  [0:0] inout_ram_io3_oe;
 input in_run;
 output out_done;
 input reset;
@@ -2071,10 +2068,18 @@ M_qqspi_memory_M_main_ram ram (
 .out_ram_clk(_w_ram_ram_clk),
 .out_ram_csn(_w_ram_ram_csn),
 .out_ram_bank(_w_ram_ram_bank),
-.inout_ram_io0(inout_ram_io0),
-.inout_ram_io1(inout_ram_io1),
-.inout_ram_io2(inout_ram_io2),
-.inout_ram_io3(inout_ram_io3),
+.inout_io0_i(inout_ram_io0_i),
+.inout_io0_o(inout_ram_io0_o),
+.inout_io0_oe(inout_ram_io0_oe),
+.inout_io1_i(inout_ram_io1_i),
+.inout_io1_o(inout_ram_io1_o),
+.inout_io1_oe(inout_ram_io1_oe),
+.inout_io2_i(inout_ram_io2_i),
+.inout_io2_o(inout_ram_io2_o),
+.inout_io2_oe(inout_ram_io2_oe),
+.inout_io3_i(inout_ram_io3_i),
+.inout_io3_o(inout_ram_io3_o),
+.inout_io3_oe(inout_ram_io3_oe),
 .reset(reset),
 .clock(clock));
 M_icev_ram_M_main_cpu cpu (
