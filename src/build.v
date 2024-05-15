@@ -2,6 +2,7 @@
 `define PMOD_QQSPI 1
 `define SPISCREEN_EXTRA 1
 `define NO_FASTRAM 1
+`define SIM_SB_IO 1
 /*
 
 Copyright 2019, (C) Sylvain Lefebvre and contributors
@@ -112,6 +113,134 @@ M_main __main(
 );
 
 endmodule
+// NOTE: this is a modified exerpt from Yosys ice40 cell_sim.v
+
+`timescale 1ps / 1ps
+// `define SB_DFF_INIT initial Q = 0;
+// `define SB_DFF_INIT
+
+// SiliconBlue IO Cells
+
+module _SB_IO (
+	inout  PACKAGE_PIN,
+	input  LATCH_INPUT_VALUE,
+	input  CLOCK_ENABLE = 1'b1,
+	input  INPUT_CLK,
+	input  OUTPUT_CLK,
+	input  OUTPUT_ENABLE = 1'b1,
+	input  D_OUT_0,
+	input  D_OUT_1,
+	output D_IN_0,
+	output D_IN_1
+);
+	parameter [5:0] PIN_TYPE = 6'b000000;
+	parameter [0:0] PULLUP = 1'b0;
+	parameter [0:0] NEG_TRIGGER = 1'b0;
+	parameter IO_STANDARD = "SB_LVCMOS";
+
+	reg dout, din_0, din_1;
+	reg din_q_0, din_q_1;
+	reg dout_q_0, dout_q_1;
+	reg outena_q;
+
+	// IO tile generates a constant 1'b1 internally if global_cen is not connected
+
+	generate if (!NEG_TRIGGER) begin
+		always @(posedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN;
+		always @(negedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN;
+		always @(posedge OUTPUT_CLK) dout_q_0        <= D_OUT_0;
+		always @(negedge OUTPUT_CLK) dout_q_1        <= D_OUT_1;
+		always @(posedge OUTPUT_CLK) outena_q        <= OUTPUT_ENABLE;
+	end else begin
+		always @(negedge INPUT_CLK)  din_q_0         <= PACKAGE_PIN;
+		always @(posedge INPUT_CLK)  din_q_1         <= PACKAGE_PIN;
+		always @(negedge OUTPUT_CLK) dout_q_0        <= D_OUT_0;
+		always @(posedge OUTPUT_CLK) dout_q_1        <= D_OUT_1;
+		always @(negedge OUTPUT_CLK) outena_q        <= OUTPUT_ENABLE;
+	end endgenerate
+
+	always @* begin
+		if (!PIN_TYPE[1] || !LATCH_INPUT_VALUE)
+			din_0 = PIN_TYPE[0] ? PACKAGE_PIN : din_q_0;
+		din_1 = din_q_1;
+	end
+
+	// work around simulation glitches on dout in DDR mode
+	//reg outclk_delayed_1;
+	//reg outclk_delayed_2;
+	//always @* outclk_delayed_1 <= OUTPUT_CLK;
+	//always @* outclk_delayed_2 <= outclk_delayed_1;
+
+	always @* begin
+		if (PIN_TYPE[3])
+			dout = PIN_TYPE[2] ? !dout_q_0 : D_OUT_0;
+		else
+			dout = (/*outclk_delayed_2*/OUTPUT_CLK ^ NEG_TRIGGER) || PIN_TYPE[2] ? dout_q_0 : dout_q_1;
+	end
+
+	assign D_IN_0 = din_0, D_IN_1 = din_1;
+
+	generate
+		if (PIN_TYPE[5:4] == 2'b01) assign PACKAGE_PIN = dout;
+		if (PIN_TYPE[5:4] == 2'b10) assign PACKAGE_PIN = OUTPUT_ENABLE ? dout : 1'bz;
+		if (PIN_TYPE[5:4] == 2'b11) assign PACKAGE_PIN = outena_q ? dout : 1'bz;
+	endgenerate
+
+endmodule
+
+module _SB_GB_IO (
+	inout  PACKAGE_PIN,
+	output GLOBAL_BUFFER_OUTPUT,
+	input  LATCH_INPUT_VALUE,
+	input  CLOCK_ENABLE = 1'b1,
+	input  INPUT_CLK,
+	input  OUTPUT_CLK,
+	input  OUTPUT_ENABLE,
+	input  D_OUT_0,
+	input  D_OUT_1,
+	output D_IN_0,
+	output D_IN_1
+);
+	parameter [5:0] PIN_TYPE = 6'b000000;
+	parameter [0:0] PULLUP = 1'b0;
+	parameter [0:0] NEG_TRIGGER = 1'b0;
+	parameter IO_STANDARD = "SB_LVCMOS";
+
+	assign GLOBAL_BUFFER_OUTPUT = PACKAGE_PIN;
+
+	_SB_IO #(
+		.PIN_TYPE(PIN_TYPE),
+		.PULLUP(PULLUP),
+		.NEG_TRIGGER(NEG_TRIGGER),
+		.IO_STANDARD(IO_STANDARD)
+	) IO (
+		.PACKAGE_PIN(PACKAGE_PIN),
+		.LATCH_INPUT_VALUE(LATCH_INPUT_VALUE),
+		.CLOCK_ENABLE(CLOCK_ENABLE),
+		.INPUT_CLK(INPUT_CLK),
+		.OUTPUT_CLK(OUTPUT_CLK),
+		.OUTPUT_ENABLE(OUTPUT_ENABLE),
+		.D_OUT_0(D_OUT_0),
+		.D_OUT_1(D_OUT_1),
+		.D_IN_0(D_IN_0),
+		.D_IN_1(D_IN_1)
+	);
+endmodule
+
+
+`ifndef PASSTHROUGH
+`define PASSTHROUGH
+
+module passthrough(
+	input  inv,
+  output outv);
+
+assign outv = inv;
+
+endmodule
+
+`endif
+
 
 module pll(
   input  clock_in,
@@ -122,7 +251,7 @@ module pll(
   assign rst = ~lock;
   SB_PLL40_CORE #(.FEEDBACK_PATH("SIMPLE"),
                   .PLLOUT_SELECT("GENCLK"),
-                  .DIVR(4'b0000),
+                  .DIVR(4'b0001),
                   .DIVF(7'b1000010),
                   .DIVQ(3'b100),
                   .FILTER_RANGE(3'b001),
@@ -412,12 +541,12 @@ input reset;
 output out_clock;
 input clock;
 assign out_clock = clock;
-wire  [0:0] _w_ddr_clock_unnamed_4_ddr_clock;
-wire  [0:0] _w_sb_io_inout_unnamed_5_in;
+wire  [0:0] _w_ddr_clock_unnamed_5_ddr_clock;
 wire  [0:0] _w_sb_io_inout_unnamed_6_in;
 wire  [0:0] _w_sb_io_inout_unnamed_7_in;
 wire  [0:0] _w_sb_io_inout_unnamed_8_in;
-wire  [0:0] _w_sb_io_unnamed_9_pin;
+wire  [0:0] _w_sb_io_inout_unnamed_9_in;
+wire  [0:0] _w_sb_io_unnamed_10_pin;
 reg  [3:0] _t_io_oe;
 reg  [3:0] _t_io_o;
 reg  [0:0] _t_chip_select;
@@ -431,52 +560,52 @@ reg  [0:0] _q_enable = 0;
 reg  [7:0] _d_read;
 reg  [7:0] _q_read;
 assign out_read = _q_read;
-assign out_clk = _w_ddr_clock_unnamed_4_ddr_clock;
-assign out_csn = _w_sb_io_unnamed_9_pin;
-ddr_clock ddr_clock_unnamed_4 (
+assign out_clk = _w_ddr_clock_unnamed_5_ddr_clock;
+assign out_csn = _w_sb_io_unnamed_10_pin;
+ddr_clock ddr_clock_unnamed_5 (
 .clock(clock),
 .enable(_q_enable),
-.ddr_clock(_w_ddr_clock_unnamed_4_ddr_clock));
-sb_io_inout #(
-.TYPE(6'b1101_00)
-)
-sb_io_inout_unnamed_5 (
-.clock(clock),
-.oe(_t_io_oe[0+:1]),
-.out(_t_io_o[0+:1]),
-.in(_w_sb_io_inout_unnamed_5_in),
-.pin(inout_io0));
+.ddr_clock(_w_ddr_clock_unnamed_5_ddr_clock));
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
 sb_io_inout_unnamed_6 (
 .clock(clock),
-.oe(_t_io_oe[1+:1]),
-.out(_t_io_o[1+:1]),
+.oe(_t_io_oe[0+:1]),
+.out(_t_io_o[0+:1]),
 .in(_w_sb_io_inout_unnamed_6_in),
-.pin(inout_io1));
+.pin(inout_io0));
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
 sb_io_inout_unnamed_7 (
 .clock(clock),
-.oe(_t_io_oe[2+:1]),
-.out(_t_io_o[2+:1]),
+.oe(_t_io_oe[1+:1]),
+.out(_t_io_o[1+:1]),
 .in(_w_sb_io_inout_unnamed_7_in),
-.pin(inout_io2));
+.pin(inout_io1));
 sb_io_inout #(
 .TYPE(6'b1101_00)
 )
 sb_io_inout_unnamed_8 (
 .clock(clock),
+.oe(_t_io_oe[2+:1]),
+.out(_t_io_o[2+:1]),
+.in(_w_sb_io_inout_unnamed_8_in),
+.pin(inout_io2));
+sb_io_inout #(
+.TYPE(6'b1101_00)
+)
+sb_io_inout_unnamed_9 (
+.clock(clock),
 .oe(_t_io_oe[3+:1]),
 .out(_t_io_o[3+:1]),
-.in(_w_sb_io_inout_unnamed_8_in),
+.in(_w_sb_io_inout_unnamed_9_in),
 .pin(inout_io3));
-sb_io sb_io_unnamed_9 (
+sb_io sb_io_unnamed_10 (
 .clock(clock),
 .out(_t_chip_select),
-.pin(_w_sb_io_unnamed_9_pin));
+.pin(_w_sb_io_unnamed_10_pin));
 
 
 
@@ -496,7 +625,7 @@ _t_chip_select = ~(in_trigger|_q_enable);
 
 _t_io_oe = {4{in_send_else_read}};
 
-_d_read = {_q_read[0+:4],{_w_sb_io_inout_unnamed_8_in[0+:1],_w_sb_io_inout_unnamed_7_in[0+:1],_w_sb_io_inout_unnamed_6_in[0+:1],_w_sb_io_inout_unnamed_5_in[0+:1]}};
+_d_read = {_q_read[0+:4],{_w_sb_io_inout_unnamed_9_in[0+:1],_w_sb_io_inout_unnamed_8_in[0+:1],_w_sb_io_inout_unnamed_7_in[0+:1],_w_sb_io_inout_unnamed_6_in[0+:1]}};
 
 _t_io_o = ~_q_osc ? _q_sending[0+:4]:_q_sending[4+:4];
 
@@ -1727,7 +1856,7 @@ output out_clock;
 input clock;
 assign out_clock = clock;
 wire  [9:0] _c_interval;
-assign _c_interval = 434;
+assign _c_interval = 217;
 
 reg  [9:0] _d_counter;
 reg  [9:0] _q_counter;
@@ -1854,17 +1983,16 @@ output out_done;
 input reset;
 output out_clock;
 input clock;
-assign out_clock = _w_pllgen_clock_out;
-wire  [0:0] _w_pllgen_clock_out;
-wire  [0:0] _w_pllgen_rst;
+assign out_clock = clock;
+wire  [0:0] _w_passthrough_unnamed_0_outv;
 wire  [0:0] _w_display_spi_clk;
 wire  [0:0] _w_display_spi_mosi;
 wire  [0:0] _w_display_spi_dc;
 wire  [0:0] _w_display_ready;
-wire  [0:0] _w_sb_io_unnamed_0_pin;
 wire  [0:0] _w_sb_io_unnamed_1_pin;
 wire  [0:0] _w_sb_io_unnamed_2_pin;
 wire  [0:0] _w_sb_io_unnamed_3_pin;
+wire  [0:0] _w_sb_io_unnamed_4_pin;
 wire  [32-1:0] _w_ram_io_rdata;
 wire  [1-1:0] _w_ram_io_done;
 wire  [0:0] _w_ram_ram_clk;
@@ -1896,16 +2024,15 @@ assign out_ram_clk = _w_ram_ram_clk;
 assign out_ram_csn = _w_ram_ram_csn;
 assign out_ram_bank = _w_ram_ram_bank;
 assign out_uart_tx = _w_usend_uart_tx;
-assign out_spiscreen_clk = _w_sb_io_unnamed_0_pin;
-assign out_spiscreen_mosi = _w_sb_io_unnamed_1_pin;
-assign out_spiscreen_dc = _w_sb_io_unnamed_2_pin;
-assign out_spiscreen_resn = _w_sb_io_unnamed_3_pin;
+assign out_spiscreen_clk = _w_sb_io_unnamed_1_pin;
+assign out_spiscreen_mosi = _w_sb_io_unnamed_2_pin;
+assign out_spiscreen_dc = _w_sb_io_unnamed_3_pin;
+assign out_spiscreen_resn = _w_sb_io_unnamed_4_pin;
 assign out_spiscreen_csn = _q_spiscreen_csn;
 assign out_done = 0;
-pll pllgen (
-.clock_in(clock),
-.clock_out(_w_pllgen_clock_out),
-.rst(_w_pllgen_rst));
+passthrough passthrough_unnamed_0 (
+.inv(clock),
+.outv(_w_passthrough_unnamed_0_outv));
 M_spi_mode3_send_M_main_display display (
 .in_enable(_t__display_enable),
 .in_data_or_command(_w_displ_dta_or_cmd),
@@ -1914,24 +2041,24 @@ M_spi_mode3_send_M_main_display display (
 .out_spi_mosi(_w_display_spi_mosi),
 .out_spi_dc(_w_display_spi_dc),
 .out_ready(_w_display_ready),
-.reset(_w_pllgen_rst),
-.clock(_w_pllgen_clock_out));
-sb_io sb_io_unnamed_0 (
-.clock(_w_pllgen_clock_out),
-.out(_w_display_spi_clk),
-.pin(_w_sb_io_unnamed_0_pin));
+.reset(reset),
+.clock(clock));
 sb_io sb_io_unnamed_1 (
-.clock(_w_pllgen_clock_out),
-.out(_w_display_spi_mosi),
+.clock(_w_passthrough_unnamed_0_outv),
+.out(_w_display_spi_clk),
 .pin(_w_sb_io_unnamed_1_pin));
 sb_io sb_io_unnamed_2 (
-.clock(_w_pllgen_clock_out),
-.out(_w_display_spi_dc),
+.clock(_w_passthrough_unnamed_0_outv),
+.out(_w_display_spi_mosi),
 .pin(_w_sb_io_unnamed_2_pin));
 sb_io sb_io_unnamed_3 (
-.clock(_w_pllgen_clock_out),
-.out(_d_screen_resn),
+.clock(_w_passthrough_unnamed_0_outv),
+.out(_w_display_spi_dc),
 .pin(_w_sb_io_unnamed_3_pin));
+sb_io sb_io_unnamed_4 (
+.clock(_w_passthrough_unnamed_0_outv),
+.out(_d_screen_resn),
+.pin(_w_sb_io_unnamed_4_pin));
 M_qqspi_memory_M_main_ram ram (
 .in_io_addr(_w_cpu_mem_addr),
 .in_io_wenable(_w_cpu_mem_wenable),
@@ -1948,8 +2075,8 @@ M_qqspi_memory_M_main_ram ram (
 .inout_ram_io1(inout_ram_io1),
 .inout_ram_io2(inout_ram_io2),
 .inout_ram_io3(inout_ram_io3),
-.reset(_w_pllgen_rst),
-.clock(_w_pllgen_clock_out));
+.reset(reset),
+.clock(clock));
 M_icev_ram_M_main_cpu cpu (
 .in_mem_rdata(_w_ram_io_rdata),
 .in_mem_done(_w_ram_io_done),
@@ -1959,15 +2086,15 @@ M_icev_ram_M_main_cpu cpu (
 .out_mem_byte_size(_w_cpu_mem_byte_size),
 .out_mem_wdata(_w_cpu_mem_wdata),
 .out_mem_req_valid(_w_cpu_mem_req_valid),
-.reset(_w_pllgen_rst),
-.clock(_w_pllgen_clock_out));
+.reset(reset),
+.clock(clock));
 M_uart_sender_M_main_usend usend (
 .in_io_data_in(_t_uo_data_in),
 .in_io_data_in_ready(_t_uo_data_in_ready),
 .out_io_busy(_w_usend_io_busy),
 .out_uart_tx(_w_usend_uart_tx),
-.reset(_w_pllgen_rst),
-.clock(_w_pllgen_clock_out));
+.reset(reset),
+.clock(clock));
 
 
 assign _w_displ_dta_or_cmd = ~_w_cpu_mem_wdata[9+:1];
@@ -2039,7 +2166,7 @@ end
 // pipeline stage triggers
 end
 
-always @(posedge _w_pllgen_clock_out) begin
+always @(posedge clock) begin
 _q_screen_resn <= _d_screen_resn;
 _q_leds <= _d_leds;
 _q_spiscreen_csn <= _d_spiscreen_csn;
