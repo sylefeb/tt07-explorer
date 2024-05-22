@@ -880,7 +880,7 @@ wire  [0:0] _w_ram_busy;
 wire  [0:0] _w_ram_data_next;
 wire  [0:0] _w_ram_ram_csn;
 wire  [0:0] _w_ram_ram_clk;
-wire  [7:0] _c__ram_wdata;
+reg  [7:0] _t__ram_wdata;
 reg  [0:0] _t__ram_in_ready;
 reg  [0:0] _t__ram_init;
 reg  [0:0] _t__ram_wenable;
@@ -962,7 +962,7 @@ M_qpsram_ram_M_main_terrain_ram ram (
 .in_in_ready(_t__ram_in_ready),
 .in_init(_t__ram_init),
 .in_addr(_d__ram_addr),
-.in_wdata(_c__ram_wdata),
+.in_wdata(_t__ram_wdata),
 .in_wenable(_t__ram_wenable),
 .out_rdata(_w_ram_rdata),
 .out_busy(_w_ram_busy),
@@ -1030,6 +1030,8 @@ _t___block_61_y_ground = 0;
 // _always_pre
 // __block_1
 _t__ram_wenable = 0;
+
+_t__ram_wdata = 0;
 
 _t__ram_in_ready = 0;
 
