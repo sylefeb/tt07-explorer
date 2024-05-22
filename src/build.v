@@ -158,7 +158,7 @@ module ddr_clock(
 `endif
     .PIN_TYPE(6'b1100_01)
   ) sbio_clk (
-      .PACKAGE_PIN(ddr_clock),
+      .PACKAGE_PIN_O(ddr_clock),
       .D_OUT_0(1'b0),
       .D_OUT_1(1'b1),
       .OUTPUT_ENABLE(enable),
@@ -263,7 +263,7 @@ module sb_io(
     //                ^^ ignored (input)
     //           ^^^^ registered output
   ) sbio (
-      .PACKAGE_PIN(pin),
+      .PACKAGE_PIN_O(pin),
       .D_OUT_0(out),
       .OUTPUT_ENABLE(1'b1),
       .OUTPUT_CLK(clock)
