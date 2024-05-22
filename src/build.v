@@ -213,9 +213,7 @@ module sb_io_inout #(parameter TYPE=6'b1101_00) (
 	input        oe,
   input        out,
 	output       in,
-  input        pin_i,
-  output       pin_o,
-  output       pin_oe
+  inout        pin
   );
 
   wire unused;
@@ -446,12 +444,12 @@ reg  [3:0] _t_io_oe;
 reg  [3:0] _t_io_o;
 reg  [0:0] _t_chip_select;
 
-reg  [7:0] _d_sending = 0;
-reg  [7:0] _q_sending = 0;
-reg  [0:0] _d_osc = 0;
-reg  [0:0] _q_osc = 0;
-reg  [0:0] _d_enable = 0;
-reg  [0:0] _q_enable = 0;
+reg  [7:0] _d_sending;
+reg  [7:0] _q_sending;
+reg  [0:0] _d_osc;
+reg  [0:0] _q_osc;
+reg  [0:0] _d_enable;
+reg  [0:0] _q_enable;
 reg  [7:0] _d_read;
 reg  [7:0] _q_read;
 assign out_read = _q_read;
@@ -548,9 +546,9 @@ _d_enable = in_trigger;
 end
 
 always @(posedge clock) begin
-_q_sending <= _d_sending;
-_q_osc <= _d_osc;
-_q_enable <= _d_enable;
+_q_sending <= (reset) ? 0 : _d_sending;
+_q_osc <= (reset) ? 0 : _d_osc;
+_q_enable <= (reset) ? 0 : _d_enable;
 _q_read <= _d_read;
 end
 
@@ -615,32 +613,32 @@ wire  [0:0] _w_spi_clk;
 wire  [0:0] _w_spi_csn;
 reg  [0:0] _t_accept_in;
 
-reg  [31:0] _d_sendvec = 0;
-reg  [31:0] _q_sendvec = 0;
+reg  [31:0] _d_sendvec;
+reg  [31:0] _q_sendvec;
 reg  [7:0] _d__spi_send;
 reg  [7:0] _q__spi_send;
 reg  [0:0] _d__spi_trigger;
 reg  [0:0] _q__spi_trigger;
 reg  [0:0] _d__spi_send_else_read;
 reg  [0:0] _q__spi_send_else_read;
-reg  [2:0] _d_stage = 1;
-reg  [2:0] _q_stage = 1;
-reg  [4:0] _d_wait = 0;
-reg  [4:0] _q_wait = 0;
-reg  [2:0] _d_after = 0;
-reg  [2:0] _q_after = 0;
-reg  [4:0] _d_sending = 0;
-reg  [4:0] _q_sending = 0;
-reg  [0:0] _d_send_else_read = 0;
-reg  [0:0] _q_send_else_read = 0;
-reg  [0:0] _d_continue = 0;
-reg  [0:0] _q_continue = 0;
+reg  [2:0] _d_stage;
+reg  [2:0] _q_stage;
+reg  [4:0] _d_wait;
+reg  [4:0] _q_wait;
+reg  [2:0] _d_after;
+reg  [2:0] _q_after;
+reg  [4:0] _d_sending;
+reg  [4:0] _q_sending;
+reg  [0:0] _d_send_else_read;
+reg  [0:0] _q_send_else_read;
+reg  [0:0] _d_continue;
+reg  [0:0] _q_continue;
 reg  [7:0] _d_rdata;
 reg  [7:0] _q_rdata;
-reg  [0:0] _d_busy = 0;
-reg  [0:0] _q_busy = 0;
-reg  [0:0] _d_data_next = 0;
-reg  [0:0] _q_data_next = 0;
+reg  [0:0] _d_busy;
+reg  [0:0] _q_busy;
+reg  [0:0] _d_data_next;
+reg  [0:0] _q_data_next;
 assign out_rdata = _q_rdata;
 assign out_busy = _q_busy;
 assign out_data_next = _q_data_next;
@@ -806,19 +804,19 @@ end
 end
 
 always @(posedge clock) begin
-_q_sendvec <= _d_sendvec;
+_q_sendvec <= (reset) ? 0 : _d_sendvec;
 _q__spi_send <= _d__spi_send;
 _q__spi_trigger <= _d__spi_trigger;
 _q__spi_send_else_read <= _d__spi_send_else_read;
-_q_stage <= _d_stage;
-_q_wait <= _d_wait;
-_q_after <= _d_after;
-_q_sending <= _d_sending;
-_q_send_else_read <= _d_send_else_read;
-_q_continue <= _d_continue;
+_q_stage <= (reset) ? 1 : _d_stage;
+_q_wait <= (reset) ? 0 : _d_wait;
+_q_after <= (reset) ? 0 : _d_after;
+_q_sending <= (reset) ? 0 : _d_sending;
+_q_send_else_read <= (reset) ? 0 : _d_send_else_read;
+_q_continue <= (reset) ? 0 : _d_continue;
 _q_rdata <= _d_rdata;
-_q_busy <= _d_busy;
-_q_data_next <= _d_data_next;
+_q_busy <= (reset) ? 0 : _d_busy;
+_q_data_next <= (reset) ? 0 : _d_data_next;
 end
 
 endmodule
@@ -880,9 +878,9 @@ wire  [0:0] _w_ram_busy;
 wire  [0:0] _w_ram_data_next;
 wire  [0:0] _w_ram_ram_csn;
 wire  [0:0] _w_ram_ram_clk;
-reg  [7:0] _t__ram_wdata;
 reg  [0:0] _t__ram_in_ready;
 reg  [0:0] _t__ram_init;
+reg  [7:0] _t__ram_wdata;
 reg  [0:0] _t__ram_wenable;
 reg signed [21:0] _t___block_40_x_off;
 reg  [7:0] _t___block_51_hmap;
@@ -923,8 +921,8 @@ reg signed [21:0] _d___block_40_p_x;
 reg signed [21:0] _q___block_40_p_x;
 reg signed [21:0] _d___block_40_p_y;
 reg signed [21:0] _q___block_40_p_y;
-reg  [23:0] _d___block_48_c_h = 0;
-reg  [23:0] _q___block_48_c_h = 0;
+reg  [23:0] _d___block_48_c_h;
+reg  [23:0] _q___block_48_c_h;
 reg  [2:0] _d___block_48_n3;
 reg  [2:0] _q___block_48_n3;
 reg  [17:0] _d___block_51_tmp;
@@ -948,7 +946,7 @@ reg  [0:0] _q_screen_send;
 reg  [0:0] _d_screen_reset;
 reg  [0:0] _q_screen_reset;
 reg  [3:0] _d__idx_fsm0,_q__idx_fsm0;
-reg  _autorun = 0;
+reg  _autorun;
 assign out_ram_clk = _w_ram_ram_clk;
 assign out_ram_csn = _w_ram_ram_csn;
 assign out_ram_bank = _q_ram_bank;
@@ -1286,7 +1284,7 @@ _d___block_61_y = _q___block_33_y_last;
 
 _d___block_61_y_screen = (_q___block_33_iz==255) ? -1:_t___block_61_y_ground;
 
-_d_pixel_data = (_q___block_33_iz==255) ? 0:_q___block_48_c_h[0+:16];
+_d_pixel_data = (_q___block_33_iz==255) ? {3'b000,5'b10100,5'b10000,3'b100}:_q___block_48_c_h[0+:16];
 
 _d__idx_fsm0 = 12;
 end
@@ -1347,7 +1345,7 @@ _q___block_37_step <= _d___block_37_step;
 _q___block_40_inv_z <= _d___block_40_inv_z;
 _q___block_40_p_x <= _d___block_40_p_x;
 _q___block_40_p_y <= _d___block_40_p_y;
-_q___block_48_c_h <= _d___block_48_c_h;
+_q___block_48_c_h <= (reset) ? 0 : _d___block_48_c_h;
 _q___block_48_n3 <= (reset) ? 3'b111 : _d___block_48_n3;
 _q___block_51_tmp <= (reset) ? 0 : _d___block_51_tmp;
 _q___block_51_h_diff_H <= _d___block_51_h_diff_H;
@@ -1453,8 +1451,8 @@ reg  [4:0] _d_leds;
 reg  [4:0] _q_leds;
 reg  [1:0] _d_ram_bank;
 reg  [1:0] _q_ram_bank;
-reg  [0:0] _d_spiscreen_csn = 0;
-reg  [0:0] _q_spiscreen_csn = 0;
+reg  [0:0] _d_spiscreen_csn;
+reg  [0:0] _q_spiscreen_csn;
 assign out_leds = _q_leds;
 assign out_ram_clk = _w_terrain_ram_clk;
 assign out_ram_csn = _w_terrain_ram_csn;
@@ -1565,7 +1563,7 @@ _q_pixel_do_send <= (reset) ? 0 : _d_pixel_do_send;
 _q_busy <= (reset) ? 0 : _d_busy;
 _q_leds <= _d_leds;
 _q_ram_bank <= _d_ram_bank;
-_q_spiscreen_csn <= _d_spiscreen_csn;
+_q_spiscreen_csn <= (reset) ? 0 : _d_spiscreen_csn;
 end
 
 endmodule
