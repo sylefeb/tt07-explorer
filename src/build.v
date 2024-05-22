@@ -114,10 +114,18 @@ module _SB_IO (
 	assign D_IN_0 = din_0, D_IN_1 = din_1;
 
 	generate
-    assign PACKAGE_PIN_O = dout;
-		if (PIN_TYPE[5:4] == 2'b01) assign PACKAGE_PIN_OE = 1'b1;
-		if (PIN_TYPE[5:4] == 2'b10) assign PACKAGE_PIN_OE = OUTPUT_ENABLE;
-		if (PIN_TYPE[5:4] == 2'b11) assign PACKAGE_PIN_OE = outena_q;
+		if (PIN_TYPE[5:4] == 2'b01) begin
+      assign PACKAGE_PIN_OE = 1'b1;
+      assign PACKAGE_PIN_O = dout;
+    end
+		if (PIN_TYPE[5:4] == 2'b10) begin
+      assign PACKAGE_PIN_OE = OUTPUT_ENABLE;
+      assign PACKAGE_PIN_O  = OUTPUT_ENABLE ? dout : 1'bz;
+    end
+		if (PIN_TYPE[5:4] == 2'b11) begin
+      assign PACKAGE_PIN_OE = outena_q;
+      assign PACKAGE_PIN_O  = outena_q ? dout : 1'bz;
+    end
 	endgenerate
 
 endmodule
@@ -953,7 +961,7 @@ assign out_ram_clk = _w_ram_ram_clk;
 assign out_ram_csn = _w_ram_ram_csn;
 assign out_ram_bank = _q_ram_bank;
 assign out_pixel_ready = _q_pixel_ready;
-assign out_pixel_data = _q_pixel_data;
+assign out_pixel_data = _d_pixel_data;
 assign out_screen_send = _q_screen_send;
 assign out_screen_reset = _q_screen_reset;
 assign out_done = (_q__idx_fsm0 == 0) && _autorun
@@ -1286,7 +1294,7 @@ _d___block_61_y = _q___block_33_y_last;
 
 _d___block_61_y_screen = (_q___block_33_iz==255) ? -1:_t___block_61_y_ground;
 
-_d_pixel_data = (_q___block_33_iz==255) ? {3'b000,5'b10100,5'b10000,3'b100}:_q___block_48_c_h[0+:16];
+_d_pixel_data = (_q___block_33_iz==255) ? {3'b000,5'b10100,5'b10000,3'b100} :_q___block_48_c_h[0+:16];
 
 _d__idx_fsm0 = 12;
 end
