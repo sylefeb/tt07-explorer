@@ -20,6 +20,8 @@ module tt_um_example (
 
   wire D5,D4,D3,D2,D1; // ignored
 
+  wire [3:0] main_uio_oe;
+
   // https://tinytapeout.com/specs/pinouts/
 
   M_main main(
@@ -34,19 +36,19 @@ module tt_um_example (
 
     .inout_ram_io0_i(uio_in[1]),
     .inout_ram_io0_o(uio_out[1]),
-    .inout_ram_io0_oe(uio_oe[1]),
+    .inout_ram_io0_oe(main_uio_oe[0]),
 
     .inout_ram_io1_i(uio_in[2]),
     .inout_ram_io1_o(uio_out[2]),
-    .inout_ram_io1_oe(uio_oe[2]),
+    .inout_ram_io1_oe(main_uio_oe[1]),
 
     .inout_ram_io2_i(uio_in[4]),
     .inout_ram_io2_o(uio_out[4]),
-    .inout_ram_io2_oe(uio_oe[4]),
+    .inout_ram_io2_oe(main_uio_oe[2]),
 
     .inout_ram_io3_i(uio_in[5]),
     .inout_ram_io3_o(uio_out[5]),
-    .inout_ram_io3_oe(uio_oe[5]),
+    .inout_ram_io3_oe(main_uio_oe[3]),
 
     .out_spiscreen_clk(uo_out[1]),
     .out_spiscreen_csn(uo_out[2]),
@@ -54,19 +56,18 @@ module tt_um_example (
     .out_spiscreen_mosi(uo_out[4]),
     .out_spiscreen_resn(uo_out[5]),
 
-    .in_uart_rx(ui_in[7]),
-    .out_uart_tx(uo_out[0]),
+    //.in_uart_rx(ui_in[7]),
+    //.out_uart_tx(uo_out[0]),
 
     .in_run(1'b1),
     .reset(~rst_n),
     .clock(clk)
   );
 
-  assign uio_oe[0] = 1;
-  assign uio_oe[3] = 1;
-  assign uio_oe[6] = 1;
-  assign uio_oe[7] = 1;
-  
+  //              vvvvv inputs when in reset to allow PMOD external takeover
+  assign uio_oe = rst_n ? {1'b1,1'b1,main_uio_oe[3],main_uio_oe[2],1'b1,main_uio_oe[1],main_uio_oe[0],1'b1} : 8'h00;
+
+  assign uo_out[0] = 0;
   assign uo_out[6] = 0;
   assign uo_out[7] = 0;
 
