@@ -213,7 +213,9 @@ module sb_io_inout #(parameter TYPE=6'b1101_00) (
 	input        oe,
   input        out,
 	output       in,
-  inout        pin
+  input        pin_i,
+  output       pin_o,
+  output       pin_oe
   );
 
   wire unused;
