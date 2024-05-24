@@ -833,6 +833,7 @@ endmodule
 
 
 module M_terrain_renderer_M_main_terrain (
+in_btns,
 in_write_en,
 out_ram_clk,
 out_ram_csn,
@@ -858,6 +859,7 @@ reset,
 out_clock,
 clock
 );
+input  [3:0] in_btns;
 input  [0:0] in_write_en;
 output  [0:0] out_ram_clk;
 output  [0:0] out_ram_csn;
@@ -907,6 +909,8 @@ reg  [8:0] _d___block_5_vheight;
 reg  [8:0] _q___block_5_vheight;
 reg  [8:0] _d___block_5_next_vheight;
 reg  [8:0] _q___block_5_next_vheight;
+reg  [31:0] _d___block_5_config;
+reg  [31:0] _q___block_5_config;
 reg  [7:0] _d___block_5_cmds;
 reg  [7:0] _q___block_5_cmds;
 reg  [1:0] _d___block_9_n2;
@@ -1006,6 +1010,7 @@ _d___block_5_v_x = _q___block_5_v_x;
 _d___block_5_v_y = _q___block_5_v_y;
 _d___block_5_vheight = _q___block_5_vheight;
 _d___block_5_next_vheight = _q___block_5_next_vheight;
+_d___block_5_config = _q___block_5_config;
 _d___block_5_cmds = _q___block_5_cmds;
 _d___block_9_n2 = _q___block_9_n2;
 _d___block_12_cnt = _q___block_12_cnt;
@@ -1060,6 +1065,7 @@ _d___block_5_v_x = 2097152;
 _d___block_5_v_y = 3129344;
 _d___block_5_vheight = 190;
 _d___block_5_next_vheight = 190;
+_d___block_5_config = 0;
 _d___block_5_cmds = 0;
 // --
 _d__idx_fsm0 = 2;
@@ -1107,6 +1113,8 @@ end else begin
 // var inits
 _d___block_12_cnt = 1;
 // --
+_d___block_5_config = _q_pixel_data[14+:1] ? {_q___block_5_config[0+:24],_q_pixel_data[0+:8]}:_q___block_5_config;
+
 _d_screen_reset = ~_q_pixel_data[9+:1];
 
 _d_screen_send = ~_q_pixel_data[15+:1];
@@ -1148,22 +1156,23 @@ end
 end
 6: begin
 // __while__block_30
-if (_q___block_29_x!=320) begin
+if (_q___block_29_x!=_q___block_5_config[16+:9]) begin
 // __block_31
 // __block_33
 // var inits
-_d___block_33_y_last = 239;
 _d___block_33_iz = 2;
 _d___block_33_z = 4096;
 // --
+_d___block_33_y_last = _q___block_5_config[0+:8];
+
 _d__idx_fsm0 = 7;
 end else begin
 // __block_32
 _d___block_5_vheight = _q___block_5_next_vheight+128;
 
-_d___block_5_v_y = _q___block_5_v_y+8192;
+_d___block_5_v_x = _q___block_5_v_x+((in_btns[0+:1] ? 2048:0)|(in_btns[1+:1] ? -2048:0));
 
-_d___block_5_v_x = _q___block_5_v_x+2048;
+_d___block_5_v_y = _q___block_5_v_y+((in_btns[2+:1] ? 2048:0)|(in_btns[3+:1] ? -2048:0));
 
 // __block_71
 _d__idx_fsm0 = 3;
@@ -1294,7 +1303,7 @@ _d___block_61_y = _q___block_33_y_last;
 
 _d___block_61_y_screen = (_q___block_33_iz==255) ? -1:_t___block_61_y_ground;
 
-_d_pixel_data = (_q___block_33_iz==255) ? {3'b000,5'b10100,5'b10000,3'b100} :_q___block_48_c_h[0+:16];
+_d_pixel_data = (_q___block_33_iz==255) ? {3'b000,5'b10100,5'b10000,3'b100}:_q___block_48_c_h[0+:16];
 
 _d__idx_fsm0 = 12;
 end
@@ -1343,11 +1352,12 @@ _q___block_5_v_x <= (reset) ? 2097152 : _d___block_5_v_x;
 _q___block_5_v_y <= (reset) ? 3129344 : _d___block_5_v_y;
 _q___block_5_vheight <= (reset) ? 190 : _d___block_5_vheight;
 _q___block_5_next_vheight <= (reset) ? 190 : _d___block_5_next_vheight;
+_q___block_5_config <= (reset) ? 0 : _d___block_5_config;
 _q___block_5_cmds <= (reset) ? 0 : _d___block_5_cmds;
 _q___block_9_n2 <= (reset) ? 2'b11 : _d___block_9_n2;
 _q___block_12_cnt <= (reset) ? 1 : _d___block_12_cnt;
 _q___block_29_x <= (reset) ? 0 : _d___block_29_x;
-_q___block_33_y_last <= (reset) ? 239 : _d___block_33_y_last;
+_q___block_33_y_last <= _d___block_33_y_last;
 _q___block_33_iz <= (reset) ? 2 : _d___block_33_iz;
 _q___block_33_z <= (reset) ? 4096 : _d___block_33_z;
 _q___block_37_n5 <= (reset) ? 5'b11111 : _d___block_37_n5;
@@ -1375,6 +1385,10 @@ endmodule
 
 
 module M_main (
+in_btn_0,
+in_btn_1,
+in_btn_2,
+in_btn_3,
 out_leds,
 out_ram_clk,
 out_ram_csn,
@@ -1402,6 +1416,10 @@ reset,
 out_clock,
 clock
 );
+input  [0:0] in_btn_0;
+input  [0:0] in_btn_1;
+input  [0:0] in_btn_2;
+input  [0:0] in_btn_3;
 output  [4:0] out_leds;
 output  [0:0] out_ram_clk;
 output  [0:0] out_ram_csn;
@@ -1445,6 +1463,7 @@ wire  [15:0] _w_terrain_pixel_data;
 wire  [0:0] _w_terrain_screen_send;
 wire  [0:0] _w_terrain_screen_reset;
 wire _w_terrain_done;
+reg  [3:0] _t_btns;
 reg  [0:0] _t_screen_resn;
 reg  [0:0] _t__display_enable;
 reg  [0:0] _t__display_data_or_command;
@@ -1500,6 +1519,7 @@ sb_io sb_io_unnamed_3 (
 .out(_t_screen_resn),
 .pin(_w_sb_io_unnamed_3_pin));
 M_terrain_renderer_M_main_terrain terrain (
+.in_btns(_t_btns),
 .in_write_en(_t__terrain_write_en),
 .out_ram_clk(_w_terrain_ram_clk),
 .out_ram_csn(_w_terrain_ram_csn),
@@ -1561,6 +1581,8 @@ _d_pixel_to_send = _w_terrain_pixel_ready ? _w_terrain_pixel_data:_d_pixel_do_se
 _d_busy = _w_terrain_pixel_ready ? 32'hffffffff:{1'b0,_q_busy[1+:31]};
 
 _t__terrain_write_en = ~_d_busy[0+:1];
+
+_t_btns = {in_btn_3,in_btn_2,in_btn_1,in_btn_0};
 
 // __block_2
 // _always_post

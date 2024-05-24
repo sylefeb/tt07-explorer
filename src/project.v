@@ -56,6 +56,11 @@ module tt_um_explorer (
     .out_spiscreen_mosi(uo_out[4]),
     .out_spiscreen_resn(uo_out[5]),
 
+    .in_btn_0(ui_in[0]),
+    .in_btn_1(ui_in[1]),
+    .in_btn_2(ui_in[2]),
+    .in_btn_3(ui_in[3]),
+
     //.in_uart_rx(ui_in[7]),
     //.out_uart_tx(uo_out[0]),
 
