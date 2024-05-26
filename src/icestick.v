@@ -94,6 +94,10 @@ module top(
   output TR5,
   output TR6,
   output TR7,
+  input  BR7,
+  input  BR8,
+  input  BR9,
+  input  BR10,
   input  CLK
   );
 
@@ -150,12 +154,17 @@ M_main __main(
   .inout_ram_io3_i(PMOD8),
   .inout_ram_io3_o(uio_out3),
   .inout_ram_io3_oe(uio_oe3),
-  
+
   //.inout_ram_io0({PMOD2}),
   //.inout_ram_io1({PMOD3}),
   //.inout_ram_io2({PMOD7}),
   //.inout_ram_io3({PMOD8}),
-  
+
+  .in_btn_0(BR7),
+  .in_btn_1(BR8),
+  .in_btn_2(BR9),
+  .in_btn_3(BR10),
+
   .out_spiscreen_clk({TR4}),
   .out_spiscreen_csn({TR5}),
   .out_spiscreen_dc({TR6}),

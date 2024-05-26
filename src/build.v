@@ -895,6 +895,7 @@ reg  [0:0] _t__ram_init;
 reg  [7:0] _t__ram_wdata;
 reg  [0:0] _t__ram_wenable;
 reg signed [21:0] _t___block_40_x_off;
+reg signed [21:0] _t___block_40_y_off;
 reg  [7:0] _t___block_51_hmap;
 reg  [8:0] _t___block_51_h_diff;
 reg  [11:0] _t___block_61_y_ground;
@@ -925,10 +926,10 @@ reg  [8:0] _d___block_33_iz;
 reg  [8:0] _q___block_33_iz;
 reg signed [21:0] _d___block_33_z;
 reg signed [21:0] _q___block_33_z;
-reg  [4:0] _d___block_37_n5;
-reg  [4:0] _q___block_37_n5;
-reg  [39:0] _d___block_37_step;
-reg  [39:0] _q___block_37_step;
+reg  [6:0] _d___block_37_n7;
+reg  [6:0] _q___block_37_n7;
+reg  [55:0] _d___block_37_step;
+reg  [55:0] _q___block_37_step;
 reg  [9:0] _d___block_40_inv_z;
 reg  [9:0] _q___block_40_inv_z;
 reg signed [21:0] _d___block_40_p_x;
@@ -1018,7 +1019,7 @@ _d___block_29_x = _q___block_29_x;
 _d___block_33_y_last = _q___block_33_y_last;
 _d___block_33_iz = _q___block_33_iz;
 _d___block_33_z = _q___block_33_z;
-_d___block_37_n5 = _q___block_37_n5;
+_d___block_37_n7 = _q___block_37_n7;
 _d___block_37_step = _q___block_37_step;
 _d___block_40_inv_z = _q___block_40_inv_z;
 _d___block_40_p_x = _q___block_40_p_x;
@@ -1037,6 +1038,7 @@ _d_screen_send = _q_screen_send;
 _d_screen_reset = _q_screen_reset;
 _d__idx_fsm0 = _q__idx_fsm0;
 _t___block_40_x_off = 0;
+_t___block_40_y_off = 0;
 _t___block_51_hmap = 0;
 _t___block_51_h_diff = 0;
 _t___block_61_y_ground = 0;
@@ -1184,7 +1186,7 @@ if (_q___block_33_iz!=256) begin
 // __block_35
 // __block_37
 // var inits
-_d___block_37_n5 = 5'b11111;
+_d___block_37_n7 = 7'b1111111;
 // --
 _d__ram_addr = 4194304|{_q___block_29_x,_q___block_33_iz[0+:8],3'b000};
 
@@ -1199,7 +1201,7 @@ end
 end
 8: begin
 // __while__block_38
-if (_q___block_37_n5[0+:1]) begin
+if (_q___block_37_n7[0+:1]) begin
 // __block_39
 // __block_41
 _t__ram_in_ready = 1;
@@ -1207,9 +1209,9 @@ _t__ram_in_ready = 1;
 if (_w_ram_data_next) begin
 // __block_42
 // __block_44
-_d___block_37_step = {_q___block_37_step[0+:32],_w_ram_rdata};
+_d___block_37_step = {_q___block_37_step[0+:48],_w_ram_rdata};
 
-_d___block_37_n5 = _q___block_37_n5>>1;
+_d___block_37_n7 = _q___block_37_n7>>1;
 
 // __block_45
 end else begin
@@ -1221,13 +1223,15 @@ end
 _d__idx_fsm0 = 8;
 end else begin
 // __block_40
-_d___block_40_inv_z = _q___block_37_step[24+:10];
+_d___block_40_inv_z = _q___block_37_step[44+:10];
 
-_t___block_40_x_off = $signed(_q___block_37_step[0+:22]);
+_t___block_40_x_off = $signed(_q___block_37_step[22+:22]);
+
+_t___block_40_y_off = $signed(_q___block_37_step[0+:22]);
 
 _d___block_40_p_x = _q___block_5_v_x+_t___block_40_x_off;
 
-_d___block_40_p_y = _q___block_5_v_y+(_q___block_33_z);
+_d___block_40_p_y = _q___block_5_v_y+_t___block_40_y_off;
 
 _d__idx_fsm0 = 9;
 end
@@ -1360,7 +1364,7 @@ _q___block_29_x <= (reset) ? 0 : _d___block_29_x;
 _q___block_33_y_last <= _d___block_33_y_last;
 _q___block_33_iz <= (reset) ? 2 : _d___block_33_iz;
 _q___block_33_z <= (reset) ? 4096 : _d___block_33_z;
-_q___block_37_n5 <= (reset) ? 5'b11111 : _d___block_37_n5;
+_q___block_37_n7 <= (reset) ? 7'b1111111 : _d___block_37_n7;
 _q___block_37_step <= _d___block_37_step;
 _q___block_40_inv_z <= _d___block_40_inv_z;
 _q___block_40_p_x <= _d___block_40_p_x;
