@@ -29,7 +29,12 @@ async def test_project(dut):
     dut.ui_in.value  = 0
     dut.uio_in.value = 0
 
-    assert True
+    while True:
+      # Wait for the rising edge of the clock
+      await cocotb.triggers.RisingEdge(dut.clk)
+      if dut.uo_out[3]:
+         assert True
+         break
 
     # Wait for one clock cycle to see the output values
     # await ClockCycles(dut.clk, 1000)
