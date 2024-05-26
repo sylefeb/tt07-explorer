@@ -9,12 +9,16 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
+This design performs a 2D 'voxel' raycasting of a terrain, implementing in
+actual hardware the 1992 [Voxel Space](https://en.wikipedia.org/wiki/Voxel_Space)
+algorithm used in the Comanche game.
 
 ## How to test
 
-Explain how to use your project
+A specific data file containing terrain data has to be uploaded to SPI-ram
+before this can run. The plan is to do that from the RP2040 of the PCB.
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+- [QSPI PMOD from machdyne](https://machdyne.com/product/qqspi-psram32/)
+- 240x320 ST7789V screen
