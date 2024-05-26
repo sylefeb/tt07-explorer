@@ -61,9 +61,6 @@ module tt_um_explorer (
     .in_btn_2(ui_in[2]),
     .in_btn_3(ui_in[3]),
 
-    //.in_uart_rx(ui_in[7]),
-    //.out_uart_tx(uo_out[0]),
-
     .in_run(1'b1),
     .reset(~rst_n),
     .clock(clk)

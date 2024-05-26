@@ -6,6 +6,7 @@
 `default_nettype none
 
 `include "build.v"
+`include "pll.v"
 
 /*
 module tt_um_example (
@@ -131,8 +132,11 @@ assign PMOD3 = uio_oe1 ? uio_out1 : 1'bz;
 assign PMOD7 = uio_oe2 ? uio_out2 : 1'bz;
 assign PMOD8 = uio_oe3 ? uio_out3 : 1'bz;
 
+wire fast_clock;
+pll _pll(.clock_in(CLK),.clock_out(fast_clock));
+
 M_main __main(
-  .clock(CLK),
+  .clock(fast_clock),
   .reset(~RST_q[23]),
   .out_leds({D5,D4,D3,D2,D1}),
   .out_ram_bank({PMOD10,PMOD9}),
