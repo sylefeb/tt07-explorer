@@ -29,8 +29,6 @@ module tt_um_explorer (
     .out_leds({D5,D4,D3,D2,D1}),
     .out_ram_bank({uio_out[7],uio_out[6]}),
 
-    //// !!TODO!! recheck pmod wiring for machdyne pmod?
-
     .out_ram_csn(uio_out[0]),
     .out_ram_clk(uio_out[3]),
 
