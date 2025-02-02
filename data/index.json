@@ -1,0 +1,6 @@
+{
+  "name": "Explorer (Tiny Tapeout 7)",
+  "flash_files": [
+    { "offset": 0, "name": "tt07-explorer.data" }
+  ]
+}
